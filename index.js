@@ -1,5 +1,6 @@
 const express = require('express');
 require('dotenv').config()
+const axios = require('axios')
 const authRoute = require('./routes/auth');
 const userRoute = require('./routes/user');
 const adminAccountRoute = require('./routes/admin_account');
@@ -22,10 +23,7 @@ const notificationRoute = require('./routes/notification');
 
 var cookieParser = require('cookie-parser')
 
-
 const http = require('http');
-
-
 
 //Socket.io
 const { Server } = require('socket.io'); // Add this
@@ -43,9 +41,9 @@ const connectionParams = {
     useUnifiedTopology: true
 }
 
-const connectDB = async () => {
+const connectDB = async (url) => {
     try {
-        const conn = await mongoose.connect(url, connectionParams);
+        const conn = await mongoose.connect('mongodb+srv://quidev2505:9MwTCoZyCgk0IzWQ@cluster0.x11swix.mongodb.net/movinghouseservice?retryWrites=true&w=majority', connectionParams);
         console.log(`Connect Successful - MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.log(error);
@@ -55,7 +53,6 @@ const connectDB = async () => {
 
 const app = express()
 
-
 app.use(express.json())
 app.use(cors());
 app.use(express.urlencoded({ extended: true }))
@@ -63,33 +60,6 @@ app.use(cookieParser())
 app.use('/uploads', express.static('uploads'))
 
 const server = http.createServer(app);
-
-// SOCKET.IO
-// Add this
-// Create an io server and allow for CORS from http://localhost:3000 with GET and POST methods
-// const io = new Server(server, {
-//     cors: {
-//         origin: 'http://localhost:3000',
-//         methods: ['GET', 'POST'],
-//     },
-// });
-
-// io.on('connection', (socket) => {
-//     if (!socket.connected) {
-//         // Code chỉ chạy khi socket chưa được kết nối
-//     }
-//     console.log('New client connected');
-
-//     socket.on('disconnect', () => {
-//         console.log('Client disconnected');
-//     });
-
-//     // Khi có khách hàng tạo đơn hàng mới
-//     socket.on("new_order", (dataOrderSend) => {
-//         socket.emit("notify_new_order", dataOrderSend)
-//     });
-// });
-
 
 //API - Routes
 app.use("/v1/auth", authRoute);
@@ -144,7 +114,6 @@ app.use("/v1/notification", notificationRoute)
 //Thanh toán với VN PAY
 app.use("/v1/vnpay", vnpayRoute)
 
-
 //Middleware Test First
 app.get('/', (req, res) => {
     res.send('ok')
@@ -152,30 +121,26 @@ app.get('/', (req, res) => {
 
 const PORT = 5000 || process.env.PORT
 
+//Awake server
+setInterval(() => {
+  const awakeServer = async () => {
+    try{
+        const res = await axios.get('https://chemical-malleable-scraper.glitch.me/')
+        console.log(res.data)
+    }catch(e){
+      console.log(e)
+    }
+  }
+  awakeServer()
+}, 3*60*1000)
+
+
 //Connect first before running server
 connectDB().then(() => {
-    server.listen(PORT, () => 'Server is running on port 5000');
-    // const server = app.listen(PORT, () => {
-    //     console.log(`Server is running on port ${PORT}`)
-    // })
-
-
-    //Socket.io
-
-    // Add this
-    // Listen for when the client connects via socket.io-client
-    // io.on('connection', (socket) => {
-    //     socket.on("message", (data) => {
-    //         console.log(data)
-    //         // Xử lý thông báo từ client
-    //         // Gửi thông báo đến client
-    //         socket.emit("message_send_from_server", {
-    //             message: data,
-    //         });
-    //     });
-
-    // We can write our socket event listeners in here...
-    // });
-
-})
+  try{
+     server.listen(PORT, () => 'Server is running on port 5000');
+  }catch(e){
+    console.log(`Connect Error`+ e)
+  }
+}).catch((e) => {console.log(`E: ${e}`)})
 
